@@ -328,12 +328,22 @@ class ContextPacketTests(unittest.TestCase):
     def test_document_and_return_contract_consistency(self) -> None:
         skill = (APP_DEV / "SKILL.md").read_text(encoding="utf-8")
         references = set(re.findall(r"`(references/[A-Za-z0-9_./-]+\.md)`", skill))
-        self.assertGreaterEqual(len(references), 8)
+        self.assertGreaterEqual(len(references), 6)
         for reference in references:
             self.assertTrue((APP_DEV / reference).is_file(), reference)
         self.assertIn("context-manifest.json", skill)
-        self.assertIn("不是操作系统权限沙箱", skill)
+        self.assertIn("系统权限沙箱", skill)
         self.assertIn("may_read", skill)
+        self.assertIn("唯一完整权威来源", skill)
+        self.assertIn("不要一次性加载全部 references", skill)
+        self.assertIn("普通项目交付不运行 `app-dev` 自身回归测试", skill)
+        self.assertLessEqual(len(skill.encode("utf-8")), 10_000)
+        for deferred_detail in (
+            "worktree_fingerprint",
+            "limited_delivery_accepted_contract_version",
+            "每个任务最多一次",
+        ):
+            self.assertNotIn(deferred_detail, skill)
 
         role_files = [
             APP_DEV / "references" / "roles" / "product-analyst.md",
@@ -362,8 +372,8 @@ class ContextPacketTests(unittest.TestCase):
         state = (APP_DEV / "references" / "task-state-machine.md").read_text(encoding="utf-8")
         routing = (APP_DEV / "references" / "task-routing-matrix.md").read_text(encoding="utf-8")
 
-        self.assertIn("version: 0.3.2", skill)
-        self.assertIn("真实运行优先", skill)
+        self.assertIn("version: 0.3.3", skill)
+        self.assertIn("真实观察优先", skill)
         self.assertIn("feedback-and-verification.md", skill)
         for header in ("输入条件", "内部状态", "用户可见状态", "可否重试", "是否允许默认值"):
             self.assertIn(header, policy)
@@ -401,8 +411,10 @@ class ContextPacketTests(unittest.TestCase):
         developer = (APP_DEV / "references" / "roles" / "developer.md").read_text(encoding="utf-8")
         quality = (APP_DEV / "references" / "roles" / "quality-reviewer.md").read_text(encoding="utf-8")
 
+        self.assertIn("verification-preflight-and-risk-matrix.md", skill)
+        self.assertIn("验证预检", skill)
+        self.assertIn("风险维度", skill)
         for phrase in ("验证可行性预检", "delivery_reachability", "合同驱动风险测试矩阵"):
-            self.assertIn(phrase, skill)
             self.assertIn(phrase, policy)
         for phrase in ("主路径", "边界/规模", "跨入口一致性", "权限/错误/状态", "所需证据"):
             self.assertIn(phrase, policy)
