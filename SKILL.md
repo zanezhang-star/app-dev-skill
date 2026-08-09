@@ -19,6 +19,14 @@ description: "按风险分流并实施软件功能开发、修复、重构、测
 
 根据已观察到的范围选择通道。通道不明确或出现升级信号时，才读取 `references/task-routing-matrix.md`。
 
+## 用户可见协议
+
+- 开始工作时用一行说明：`使用 app-dev · <Fast|Standard|Controlled>：<选择原因与下一步>`。
+- 通道不变时不重复播报；升级时说明 `原通道 → 新通道`、触发证据和新增影响。
+- 用户可随时指定 Fast、Standard 或 Controlled；安全切换时复用现有证据并播报一次。若降级会越过已观察风险，保留最低安全通道并说明证据。
+- 不默认展示已加载的 reference、Packet 字段、状态迁移或角色内部协议。
+- 交付时注明最终通道、验证证据和未验证限制；阻断时改为说明所需决定或输入。
+
 ### Fast Lane（默认）
 
 适用于需求明确、修改局部、容易回滚，且不涉及数据库迁移、权限/安全边界、外部集成、基础设施或广泛行为变化的任务。
@@ -57,19 +65,11 @@ description: "按风险分流并实施软件功能开发、修复、重构、测
 - 大型业务流程：`references/large-business-plan-preflight.md`
 - 某角色即将执行时：`references/roles/<role>.md`
 
-确认项目后，仅在需要追踪合同或委派时初始化任务：
+确认项目后，仅在需要追踪合同或委派时运行 `scripts/init_task.py`，只为实际角色运行 `scripts/build_context_packet.py`；参数、身份和 freshness 检查见 `references/context-routing.md`。身份不匹配或证据过期时停止采用结果。
 
-```text
-python <skill>/scripts/init_task.py --project-root <root> --task-type <type> --task-level <medium|large>
-```
+## 续跑
 
-只为实际会运行的角色生成 Packet：
-
-```text
-python <skill>/scripts/build_context_packet.py --project-root <root> --task-id <TASK-ID> --role <role>
-```
-
-委派前按 `references/context-routing.md` 执行 runtime identity check；身份不匹配或证据过期时停止采用结果。
+用户要求“继续”“恢复”、任务被中断或发现现有 app-dev 任务证据时，读取 `references/resume-protocol.md`。先确认项目、任务身份和 freshness，再从未完成验收项续跑；不重复建档、已有有效证据或无关测试。
 
 ## 成本与升级闸门
 

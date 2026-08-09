@@ -394,6 +394,13 @@ class ContextPacketTests(unittest.TestCase):
         self.assertIn("最多使用 3 个角色", skill)
         self.assertIn("不得默认加载全部 references", skill)
         self.assertIn("只有修改本 Skill", skill)
+        self.assertIn("用户可见协议", skill)
+        self.assertIn("使用 app-dev · <Fast|Standard|Controlled>", skill)
+        self.assertIn("通道不变时不重复播报", skill)
+        self.assertIn("用户可随时指定 Fast、Standard 或 Controlled", skill)
+        self.assertIn("降级会越过已观察风险", skill)
+        self.assertIn("references/resume-protocol.md", skill)
+        self.assertIn("最终通道、验证证据和未验证限制", skill)
         self.assertLessEqual(len(skill.encode("utf-8")), 6_000)
         for deferred_detail in (
             "worktree_fingerprint",
@@ -422,6 +429,28 @@ class ContextPacketTests(unittest.TestCase):
         self.assertIn("json.loads", builder)
         self.assertNotIn("yaml.safe_load", builder)
         self.assertIn('"consumed_approved_contract_version"', builder)
+
+    def test_resume_protocol_and_product_metadata(self) -> None:
+        resume = (APP_DEV / "references" / "resume-protocol.md").read_text(encoding="utf-8")
+        for phrase in (
+            "不为找任务扫描整个仓库",
+            "只询问一个选择问题",
+            "已通过的证据只在",
+            "继续使用 app-dev · <Fast|Standard|Controlled>",
+            "不重新运行 `init_task.py`",
+        ):
+            self.assertIn(phrase, resume)
+
+        metadata = (APP_DEV / "agents" / "openai.yaml").read_text(encoding="utf-8")
+        self.assertIn('display_name: "App Dev"', metadata)
+        self.assertIn("short_description:", metadata)
+        self.assertIn("$app-dev", metadata)
+        self.assertNotIn("dependencies:", metadata)
+
+        readme = (APP_DEV / "README.md").read_text(encoding="utf-8")
+        self.assertIn("$HOME/.agents/skills/", readme)
+        self.assertIn("$REPO_ROOT/.agents/skills/", readme)
+        self.assertNotIn("Hermes-compatible", readme)
 
     def test_feedback_and_verification_policy_contracts(self) -> None:
         skill = (APP_DEV / "SKILL.md").read_text(encoding="utf-8")

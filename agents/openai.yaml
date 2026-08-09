@@ -1,0 +1,4 @@
+interface:
+  display_name: "App Dev"
+  short_description: "按风险选择开发模式，实施并验证仓库中的软件功能、修复与重构"
+  default_prompt: "使用 $app-dev 以最低安全流程实施并验证这项仓库变更。"
