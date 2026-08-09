@@ -1,18 +1,29 @@
-# app-dev v0.3.2
+# app-dev
 
-A Hermes-compatible, role-scoped software delivery workflow.
+`app-dev` is a risk-routed Codex skill for implementing and verifying repository changes without imposing the same process on every task.
 
-## What changed
+## Delivery modes
 
-- Added public minimum facts plus role-specific context packets.
-- Switched machine context manifests and packets to JSON with standard-library parsing.
-- Added Git/worktree/contract snapshot freshness gates.
-- Added real-runtime validation reopening, state semantics matrices, contract-vs-defect rules, one-time micro-review, and risk-based test deduplication.
-- Kept May Read expansion available and clarified that allowed paths are read/audit scope, not an OS sandbox.
-- Added persistent regression tests for packet, snapshot, and process-contract behavior.
+| Mode | Use for | Default overhead |
+|---|---|---|
+| Fast | Clear, local, reversible changes | One agent, focused verification |
+| Standard | Cross-file or regression-sensitive changes | Short task context, optional role delegation |
+| Controlled | Data, auth, security, infrastructure, external integrations, or destructive risk | Approval, freshness, and risk-driven gates |
+
+The skill announces the selected mode, accepts user-requested mode changes when safe, and explains when observed risk prevents a downgrade. Interrupted work resumes from fresh task evidence instead of rebuilding the workflow.
 
 ## Install
 
-Install this folder as `app-dev` under the active Hermes Profile skills directory. For categorized installations, use `~/.hermes/skills/software-development/app-dev/`; preserve the category path already used by your Profile.
+- Personal use: place the `app-dev` folder under `$HOME/.agents/skills/`.
+- Repository use: place it under `$REPO_ROOT/.agents/skills/`.
+- Restart Codex only if an updated skill is not detected automatically.
 
-After replacement, start a new Hermes session and verify `skill_view(name="app-dev")` reports `version: 0.3.2`.
+Invoke it explicitly with `$app-dev`, or let Codex select it for repository changes that match the scope in `SKILL.md`.
+
+## Validate
+
+Run the bundled regression suite with an available Python 3 interpreter:
+
+```text
+python tests/test_context_packets.py -v
+```
