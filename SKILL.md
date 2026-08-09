@@ -38,6 +38,7 @@ description: "按风险分流并实施软件功能开发、修复、重构、测
 - 默认仍由当前 Agent 连续完成，不为形式拆分角色。
 - 用简短工作笔记维护验收条件和测试计划；需要跨会话、交接或持久记录时，复制并填写 `assets/task-brief.md`，否则不要仅为流程完整创建文件。
 - 仅在需求语义未定时调用 Product；仅在关键设计取舍时调用 Architect；仅在独立审查能显著增信时调用 Quality。
+- 单 Agent 不生成 Packet；发生角色委派时，读取 `references/standard-context-routing.md` 并只为实际角色生成 lightweight Packet。
 - 包含当前 Agent 在内最多使用 3 个角色。
 - 运行 focused tests 和覆盖直接依赖链的最小广测。
 

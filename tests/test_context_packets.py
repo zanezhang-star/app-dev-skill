@@ -13,6 +13,7 @@ from pathlib import Path
 APP_DEV = Path(__file__).resolve().parents[1]
 INIT = APP_DEV / "scripts" / "init_task.py"
 BUILD = APP_DEV / "scripts" / "build_context_packet.py"
+BUILD_STANDARD = APP_DEV / "scripts" / "build_standard_packet.py"
 ROLES = ("product", "architect", "developer", "quality")
 MISSING = object()
 
@@ -104,6 +105,63 @@ class ContextPacketTests(unittest.TestCase):
         if check:
             command.extend(["--check", "--runtime-root", str(runtime_root or self.project)])
         return command
+
+    def standard_packet_command(self, brief: Path, role: str = "developer") -> list[str]:
+        return [
+            sys.executable, str(BUILD_STANDARD),
+            "--project-root", str(self.project),
+            "--task-brief", str(brief),
+            "--role", role,
+            "--role-goal", "Implement AC-1 only",
+            "--scope-path", "README.md",
+            "--must-read", "README.md",
+            "--may-read", "direct callers when needed",
+            "--must-not-read", "unrelated modules",
+            "--expected-output", "scoped diff and focused test evidence",
+        ]
+
+    def test_standard_packet_is_lightweight_and_role_scoped(self) -> None:
+        brief = self.project / "task-brief.md"
+        brief.write_text("# Task Brief\n\nAC-1: update README\n", encoding="utf-8")
+        output = self.run_command(self.standard_packet_command(brief))
+        packet_path = Path(output.stdout.strip())
+        packet = json.loads(packet_path.read_text(encoding="utf-8"))
+        self.assertEqual(packet["lane"], "standard")
+        self.assertEqual(packet["role"], "developer")
+        self.assertEqual(packet["role_goal"], "Implement AC-1 only")
+        self.assertIn(str(brief.resolve()), packet["must_read"])
+        self.assertIn(str((self.project / "README.md").resolve()), packet["must_read"])
+        self.assertIn(str((self.project / "README.md").resolve()), packet["scope"]["paths"])
+        self.assertIn("consumed_task_brief_sha256", packet["required_return_snapshot"])
+        self.assertNotIn("contract_version", packet["snapshot"])
+        self.assertNotIn("worktree_fingerprint", packet["snapshot"])
+        self.assertNotIn("runtime_identity_check", packet)
+
+    def test_standard_packet_detects_brief_and_git_staleness(self) -> None:
+        brief = self.project / "task-brief.md"
+        brief.write_text("# Task Brief\n\nAC-1\n", encoding="utf-8")
+        self.run_command(self.standard_packet_command(brief))
+        check = [
+            sys.executable, str(BUILD_STANDARD),
+            "--project-root", str(self.project), "--task-brief", str(brief),
+            "--role", "developer", "--check",
+        ]
+        fresh = self.run_command(check)
+        self.assertIn('"status": "FRESH"', fresh.stdout)
+
+        brief.write_text("# Task Brief\n\nAC-2\n", encoding="utf-8")
+        stale = self.run_command(check, expected=2)
+        self.assertIn('"status": "STALE"', stale.stdout)
+        self.assertIn("task_brief_sha256", stale.stdout)
+
+    def test_standard_packet_rejects_scope_outside_project(self) -> None:
+        brief = self.project / "task-brief.md"
+        brief.write_text("# Task Brief\n", encoding="utf-8")
+        command = self.standard_packet_command(brief)
+        scope_index = command.index("--scope-path") + 1
+        command[scope_index] = str(self.project.parent / "outside.md")
+        result = self.run_command(command, expected=1)
+        self.assertIn("path must stay within project root", result.stderr)
 
     def test_initializer_artifact_schema(self) -> None:
         task = self.create_task(prepare_manifest=False)
@@ -401,7 +459,7 @@ class ContextPacketTests(unittest.TestCase):
             "环境/依赖", "验证/测试", "安全/质量", "同一 RED→GREEN", "局部修复回路",
         ):
             self.assertIn(phrase, diagnosis)
-        for phrase in ("任务与仓库", "已知事实与决定", "变化面", "验收与验证", "风险扫描", "实施与诊断记录", "本地交付"):
+        for phrase in ("任务与仓库", "已知事实与决定", "变化面", "验收与验证", "风险扫描", "实施与诊断记录", "本地交付", "委派（仅使用角色时）"):
             self.assertIn(phrase, task_brief)
 
         role_expectations = {
