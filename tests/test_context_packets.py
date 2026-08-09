@@ -394,6 +394,10 @@ class ContextPacketTests(unittest.TestCase):
         self.assertIn("最多使用 3 个角色", skill)
         self.assertIn("不得默认加载全部 references", skill)
         self.assertIn("只有修改本 Skill", skill)
+        self.assertIn("用户可见协议", skill)
+        self.assertIn("使用 app-dev · <Fast|Standard|Controlled>", skill)
+        self.assertIn("通道不变时不重复播报", skill)
+        self.assertIn("最终通道、验证证据和未验证限制", skill)
         self.assertLessEqual(len(skill.encode("utf-8")), 6_000)
         for deferred_detail in (
             "worktree_fingerprint",
