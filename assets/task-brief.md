@@ -52,3 +52,9 @@
 - 验证摘要：
 - 未验证项/交接：
 - 未获授权动作：commit / push / merge / deploy / production change
+
+## H. 委派（仅使用角色时）
+
+| role | goal | must_read | may_read | must_not_read | expected_output |
+|---|---|---|---|---|---|
+| developer / quality / product / architect |  |  |  |  |  |
