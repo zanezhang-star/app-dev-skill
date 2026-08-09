@@ -331,13 +331,12 @@ class ContextPacketTests(unittest.TestCase):
         self.assertGreaterEqual(len(references), 6)
         for reference in references:
             self.assertTrue((APP_DEV / reference).is_file(), reference)
-        self.assertIn("context-manifest.json", skill)
-        self.assertIn("系统权限沙箱", skill)
-        self.assertIn("may_read", skill)
-        self.assertIn("唯一完整权威来源", skill)
-        self.assertIn("不要一次性加载全部 references", skill)
-        self.assertIn("普通项目交付不运行 `app-dev` 自身回归测试", skill)
-        self.assertLessEqual(len(skill.encode("utf-8")), 10_000)
+        self.assertIn("Fast Lane（默认）", skill)
+        self.assertIn("默认不初始化 `.hermes`", skill)
+        self.assertIn("最多使用 3 个角色", skill)
+        self.assertIn("不得默认加载全部 references", skill)
+        self.assertIn("只有修改本 Skill", skill)
+        self.assertLessEqual(len(skill.encode("utf-8")), 6_000)
         for deferred_detail in (
             "worktree_fingerprint",
             "limited_delivery_accepted_contract_version",
@@ -369,12 +368,17 @@ class ContextPacketTests(unittest.TestCase):
     def test_feedback_and_verification_policy_contracts(self) -> None:
         skill = (APP_DEV / "SKILL.md").read_text(encoding="utf-8")
         policy = (APP_DEV / "references" / "feedback-and-verification.md").read_text(encoding="utf-8")
+        diagnosis = (APP_DEV / "references" / "diagnosis-matrix.md").read_text(encoding="utf-8")
+        task_brief = (APP_DEV / "assets" / "task-brief.md").read_text(encoding="utf-8")
         state = (APP_DEV / "references" / "task-state-machine.md").read_text(encoding="utf-8")
         routing = (APP_DEV / "references" / "task-routing-matrix.md").read_text(encoding="utf-8")
 
-        self.assertIn("version: 0.3.3", skill)
-        self.assertIn("真实观察优先", skill)
+        self.assertIn("真实代码、diff、命令退出码和可复现结果优先", skill)
         self.assertIn("feedback-and-verification.md", skill)
+        self.assertIn("diagnosis-matrix.md", skill)
+        self.assertIn("assets/task-brief.md", skill)
+        self.assertIn("Fast 禁入条件", routing)
+        self.assertIn("Fast 只用 1 个角色", routing)
         for header in ("输入条件", "内部状态", "用户可见状态", "可否重试", "是否允许默认值"):
             self.assertIn(header, policy)
         for phrase in (
@@ -392,6 +396,13 @@ class ContextPacketTests(unittest.TestCase):
         self.assertIn("real_world_validation_failed", state)
         self.assertIn("Micro-review", state)
         self.assertIn("状态语义矩阵触发", routing)
+        for phrase in (
+            "最小失败包", "需求/合同", "范围/集成", "实现/逻辑", "数据/状态",
+            "环境/依赖", "验证/测试", "安全/质量", "同一 RED→GREEN", "局部修复回路",
+        ):
+            self.assertIn(phrase, diagnosis)
+        for phrase in ("任务与仓库", "已知事实与决定", "变化面", "验收与验证", "风险扫描", "实施与诊断记录", "本地交付"):
+            self.assertIn(phrase, task_brief)
 
         role_expectations = {
             "product-analyst.md": ("状态语义矩阵", "是否允许默认值"),

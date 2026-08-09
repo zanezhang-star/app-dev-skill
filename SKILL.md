@@ -1,129 +1,93 @@
 ---
 name: app-dev
-description: "Orchestrate safe, staged software delivery with role-scoped context."
-version: 0.3.3
-author: Hermes
-metadata:
-  hermes:
-    tags: [Software, Development, Orchestration, Context, Testing, Review, Delivery]
+description: "按风险分流并实施软件功能开发、修复、重构、测试和本地交付。用于需要实际修改仓库的任务；明确、局部、低风险变更默认走 Fast Lane，只有范围不清、跨模块、数据、权限、安全、基础设施或外部集成风险才升级。不要用于仅解释代码、概念问答或不要求修改的一次性建议。"
 ---
 
-# 通用软件交付编排器
+# App Dev
 
-## 概述与使用边界
+用与风险相称的最小流程交付可验证的软件变更。
 
-`app-dev` 是跨技术栈的软件交付总控：识别项目和任务、按风险分级、维护状态、按需调用隔离角色，并以真实代码、diff、测试和运行证据控制开发、审查与交付。它不绑定具体项目、语言、业务规则或测试命令。
+## 底线
 
-用于开发、修复、重构、调查、测试或交付软件功能，尤其适合需要可追踪合同、角色隔离和真实验证的任务。不适用于只解释概念或代码、只需一次性文字建议、目标项目尚未确认的场景；未确认项目时不得创建任务资料或修改代码。
+- 先确认目标仓库，再检查项目规则、Git 状态、相关实现和已有测试。
+- 保留用户的无关改动；未获授权，不推送、合并、部署、迁移生产数据、提交密钥或执行破坏性操作。
+- 不猜业务语义，不用自述、构建成功、HTTP 200 或页面可打开冒充需求验收。
+- 只读取任务相关的文件和输出；不得默认加载全部 references、项目文档、日志或全量 diff。
+- 真实代码、diff、命令退出码和可复现结果优先。
 
-Product、Architect、Developer、Quality 不共享完整聊天或全量项目上下文。项目知识留在项目文档，单次证据留在任务目录；总控只提供公共最小事实和角色所需清单。
+## 选择执行通道
 
-## 全局底线
+根据已观察到的范围选择通道。通道不明确或出现升级信号时，才读取 `references/task-routing-matrix.md`。
 
-1. **先识别，再修改。** 先确认目标项目、项目规则、Git 状态、已有测试和禁改范围。
-2. **事实分层。** 项目事实留在项目，任务证据留在 `.hermes/tasks/`，通用 Skill 不吸收项目特例。
-3. **最小上下文。** 不把完整对话、整个任务目录、全部项目文档或全仓库代码默认复制给角色。
-4. **少量硬校验。** 机器校验身份、版本和可执行前提；自然语言方案、检索和风险判断保留智能扩展。
-5. **不猜、不虚报。** 未知业务语义、命令、权限和验证能力进入阻断或交接项；角色结论须由主控用当前状态、diff、代码和原始证据核验。
-6. **不越权。** 未获明确授权，不推送、合并、发布、部署、迁移生产数据、提交密钥或清理无关变更。
-7. **真实观察优先。** 真实安装、数据、权限、UI、CLI 或外部集成与核心 AC 冲突时，受影响结论立即失效。
+### Fast Lane（默认）
 
-## 协议权威与加载路由
+适用于需求明确、修改局部、容易回滚，且不涉及数据库迁移、权限/安全边界、外部集成、基础设施或广泛行为变化的任务。
 
-主文档只负责总控决策。详细规则以下列 reference 为唯一完整权威来源；不要一次性加载全部 references。
+1. 定位最小相关代码和测试面。
+2. 当前 Agent 直接实现；默认不初始化 `.hermes`、不生成 Context Packet、不调用 Product、Architect 或独立 Quality。
+3. 运行最窄但有意义的测试；存在 Git 时运行 `git diff --check`。
+4. 审查 scoped diff 是否满足需求、引入回归或夹带无关修改。
+5. 汇报改动文件、验证证据和未验证限制。
 
-| 主题 | 权威来源 | 何时加载 |
-|---|---|---|
-| 任务等级与角色选择 | `references/task-routing-matrix.md` | 分级或范围变化时 |
-| 阶段、状态、合同版本和迁移 | `references/task-state-machine.md` | 初始化、推进阶段或合同变化时 |
-| Packet、身份、freshness、角色隔离 | `references/context-routing.md` | 本任务首次委派前；协议或相关状态变化后重读 |
-| 验证可达性与风险测试 | `references/verification-preflight-and-risk-matrix.md` | 固定合同并授权开发前 |
-| 真实反馈、复杂状态、合同/缺陷、micro-review、测试去重 | `references/feedback-and-verification.md` | 出现对应触发条件时 |
-| 大型业务方案预检 | `references/large-business-plan-preflight.md` | 大型报表、运营、权限、周期名单或 Excel 方案审查前 |
-| 角色职责与输出 | `references/roles/*.md` | 准备调用对应角色时 |
+只有缺失决定会实质改变实现时才阻断提问；否则采用安全且明确说明的假设继续。
 
-冲突时依次采用：用户本次要求、项目规则、当前批准合同、当前代码与实际证据、通用最佳实践。
+### Standard Lane
 
-## 前置发现与任务初始化
+适用于需求基本明确但跨多个文件/模块、增加接口或配置、或有明显回归风险且不触及高风险边界的任务。
 
-创建任务或修改代码前：
+- 默认仍由当前 Agent 连续完成，不为形式拆分角色。
+- 用简短工作笔记维护验收条件和测试计划；需要跨会话、交接或持久记录时，复制并填写 `assets/task-brief.md`，否则不要仅为流程完整创建文件。
+- 仅在需求语义未定时调用 Product；仅在关键设计取舍时调用 Architect；仅在独立审查能显著增信时调用 Quality。
+- 包含当前 Agent 在内最多使用 3 个角色。
+- 运行 focused tests 和覆盖直接依赖链的最小广测。
 
-- 确认 Git 根、分支、HEAD、未提交变更和远程；
-- 读取存在的项目规则、README、贡献说明及技术栈/测试配置；
-- 搜索相关实现和测试，只局部读取与任务有关的内容；
-- 只采用项目中已证实的命令，不盲目安装依赖；
-- 按路由矩阵判断 small / medium / large，范围扩大时重新分级。
+### Controlled Lane
 
-完成标准：项目、规则来源、范围、等级、Git 快照、验证能力和未知项明确；目标或关键语义不明时停止修改并请求决定。
+适用于数据库/迁移、认证授权、敏感数据、外部 API、基础设施、破坏性操作、跨项目依赖或大型不确定任务。
 
-确认项目后初始化任务：
+开发授权前完成验证预检，并从批准合同选择适用风险维度、推导必须执行的 Gate；无法到达的验证环境必须明确限制和交接责任。
 
-```text
-python <skill目录>/scripts/init_task.py --project-root <项目根目录> --task-type <类型> --task-level <等级>
-```
+只为下一步读取所需协议：
 
-任务资料位于 `<项目根目录>/.hermes/tasks/<TASK-ID>/`，保存需求、上下文、方案、AC、测试计划、预检、开发/审查/测试证据、交付摘要、`status.yaml`、`context-manifest.json` 和角色 packets。字段与迁移以状态机为准；阶段迁移、合同变化、真实反馈和结果回收前重读 `status.yaml`，只由主控在核验证据后更新。
+- 生命周期和批准：`references/task-state-machine.md`
+- 委派、身份和 freshness：`references/context-routing.md`
+- 验证设计：`references/verification-preflight-and-risk-matrix.md`
+- 反馈和缺陷闭环：`references/feedback-and-verification.md`
+- 大型业务流程：`references/large-business-plan-preflight.md`
+- 某角色即将执行时：`references/roles/<role>.md`
 
-## 阶段路由
-
-| 阶段 | 进入条件 | 加载内容 | 完成标准 |
-|---|---|---|---|
-| 识别与分级 | 所有任务 | 路由矩阵 | 项目、范围、等级、限制明确 |
-| Product | medium/large；small 仅在需求不清时 | Product 协议 | AC、边界、待决项明确 |
-| Architect | large；高风险 medium | Architect 协议；必要时大型业务预检 | 方案、影响面、风险可审查 |
-| 验证预检 | 所有开发任务 | 预检与风险矩阵 | 必需 Gate、证据层级、可达性明确 |
-| 固定合同 | 方案和验证边界可确认 | 状态机 | 当前合同获明确开发授权 |
-| Developer | 合同已批准且预检满足条件 | 上下文路由、Developer 协议 | 最小实现和直接变化链证据已核验 |
-| Quality | scoped diff 已核验 | Quality 协议 | 合同、代码风险和测试真实性有独立结论 |
-| 闭环/交付 | 出现问题或 AC 证据齐备 | 触发时加载反馈协议 | 问题已修复/阻断，或达到本地交付闸门 |
-
-不要为了多 Agent 强制全角色流水线；按路由矩阵和实际风险决定调用或升级。
-
-## Context Packet 与委派
-
-本任务首次委派前加载 `context-routing.md` 和对应角色协议；身份协议、合同、状态结构或相关证据变化后重读并生成新包。
+确认项目后，仅在需要追踪合同或委派时初始化任务：
 
 ```text
-python <skill目录>/scripts/build_context_packet.py --project-root <项目根目录> --task-id <TASK-ID> --role <product|architect|developer|quality>
+python <skill>/scripts/init_task.py --project-root <root> --task-type <type> --task-level <medium|large>
 ```
 
-角色开始前，必须从其实际进程工作目录运行：
+只为实际会运行的角色生成 Packet：
 
 ```text
-python <skill目录>/scripts/build_context_packet.py --project-root <项目根目录> --task-id <TASK-ID> --role <角色> --check --runtime-root <Agent实际工作目录>
+python <skill>/scripts/build_context_packet.py --project-root <root> --task-id <TASK-ID> --role <role>
 ```
 
-检查失败时立即停止，主控不得采用其结论。身份字段、指纹、合同前提、过期判定和结果回收以 `context-routing.md` 为准。
+委派前按 `references/context-routing.md` 执行 runtime identity check；身份不匹配或证据过期时停止采用结果。
 
-初始只传角色目标、公共最小事实、Packet 绝对路径、`must_read` 及关键禁止事项。角色按 `may_read` 搜索后局部扩展并记录路径与理由；大型日志、完整 diff 和项目文档只传路径。`allowed_paths` 是默认读取与审计范围，不是假装存在的系统权限沙箱。
+## 成本与升级闸门
 
-Quality 独立读取原始需求、批准合同、实际 diff、当前代码和原始测试证据，不接收 Developer 主观自评或主控预设结论。
+| 通道 | 默认资料 | 角色预算 | 验证 |
+|---|---|---:|---|
+| Fast | 不建档 | 1 | focused test + scoped review |
+| Standard | 简短工作笔记 | 最多 3 | focused + 最小相关广测 |
+| Controlled | 按需 `.hermes` | 风险所需 | 合同和风险驱动 Gate |
 
-## 合同、验证与测试
+范围扩大或证据揭示新风险时立即升级；保留已完成证据，只补新增必要步骤。不得为了省流程而降级，也不得在风险未变化时反复重新分级。
 
-- AC 使用唯一编号且可检验；未确认的关键业务语义不能写成占位 AC。
-- 授权开发前完成验证预检，并从 AC 推导适用风险维度；不为填表制造测试。
-- 构建成功、HTTP 200、页面可打开或开发者自述不等于需求验收。
-- 业务代码变化先跑 focused test 和直接依赖链；独立 Quality 或提交闸门在同一源码快照上运行一次项目约定广测试。
-- 无法执行的 Gate 必须说明能证明什么、不能证明什么及交接责任；弱证据不得冒充真实环境证据。
-- 合同变化、defect、复杂状态、真实反馈和复审收敛只在触发时按反馈协议处理。
+测试、Review、AC 或真实运行失败时，读取 `references/diagnosis-matrix.md`；先锁定失败维度和最小复现，只修受影响部分，再按直接变化链重测。不要无诊断地整段重写或重复全量流程。
 
-## 完成与交付
+## 完成
 
-只有当前合同与状态/代码/Packet 一致、每个 AC 有相称证据、必须 Gate 已执行或限制已明确接受、无未接受阻断、scoped diff 与任务资料一致，并通过 `git diff --check` 及项目适用最终检查，才可标记 `ready_for_merge`。
+当请求行为已实现、scoped diff 已理解、相称检查通过或限制已明确、且无未接受阻断时完成本地交付。“本地完成”不代表已获提交、推送、合并、发布或生产修改授权。
 
-`ready_for_merge` 只表示本地交付闸门通过，不代表已获提交、推送、合并、发布、部署或生产变更授权。用户要求远程写入后，再按本次授权、项目规则和相应 Git 工作流核对远程、分支、diff、测试与暂存范围。
-
-## 降级、Skill 自检与误区
-
-无法使用 `delegate_task` 时，明确说明并在单 Agent 中按角色分段；每段只读对应 Packet，重读当前状态和 diff，不以前一角色的主观结论替代独立证据。
-
-普通项目交付不运行 `app-dev` 自身回归测试。只有修改本 Skill 的脚本、Packet、状态协议、模板或总控规则时才运行：
+只有修改本 Skill 的脚本、Packet schema、模板或协议时，才运行自身回归：
 
 ```text
-python <skill目录>/tests/test_context_packets.py -v
+python <skill>/tests/test_context_packets.py -v
 ```
-
-并验证 JSON、角色差异、身份/过期拒绝、任务资料同步和状态一致性。目标项目始终按自身合同、风险和已证实命令验证。
-
-避免：未确认项目就建档或改代码；为 small 任务机械调用全角色；提前加载全部 references；在主文档和 reference 维护两套完整协议；用构建、Mock、旧测试或自评冒充 AC 证据；因任务文档更新重复跑全量测试；把 `ready_for_merge` 误报成远程或生产授权。
